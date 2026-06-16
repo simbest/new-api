@@ -36,3 +36,5 @@ data/
 token_estimator_test.go
 skills-lock.json
 .playwright-mcp
+团队使用配置指南.md
+服务器配置说明.md
