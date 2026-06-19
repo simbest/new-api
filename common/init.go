@@ -81,6 +81,11 @@ func InitEnv() {
 	// Initialize variables from constants.go that were using environment variables
 	DebugEnabled = os.Getenv("DEBUG") == "true"
 	MemoryCacheEnabled = os.Getenv("MEMORY_CACHE_ENABLED") == "true"
+	PromptLogEnabled = GetEnvOrDefaultBool("PromptLogEnabled", PromptLogEnabled)
+	PromptLogMaxContentBytes = GetEnvOrDefault("PromptLogMaxContentBytes", PromptLogMaxContentBytes)
+	PromptLogQueueSize = GetEnvOrDefault("PromptLogQueueSize", PromptLogQueueSize)
+	PromptLogBatchSize = GetEnvOrDefault("PromptLogBatchSize", PromptLogBatchSize)
+	PromptLogFlushIntervalSeconds = GetEnvOrDefault("PromptLogFlushIntervalSeconds", PromptLogFlushIntervalSeconds)
 	IsMasterNode = os.Getenv("NODE_TYPE") != "slave"
 	NodeName = os.Getenv("NODE_NAME")
 	TLSInsecureSkipVerify = GetEnvOrDefaultBool("TLS_INSECURE_SKIP_VERIFY", false)

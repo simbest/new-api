@@ -8,6 +8,7 @@ upload
 build
 *.db-journal
 logs
+logs-*/
 web/default/dist
 web/classic/dist
 web/node_modules
@@ -29,10 +30,12 @@ plans
 electron/node_modules
 electron/dist
 data/
+data-*/
 .gomodcache/
 .gocache-temp
 .gopath
 .test
+Dockerfile.promptlog-*
 token_estimator_test.go
 skills-lock.json
 .playwright-mcp

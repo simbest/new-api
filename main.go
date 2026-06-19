@@ -300,6 +300,7 @@ func InitResources() error {
 	if err != nil {
 		return err
 	}
+	service.StartPromptLogWorker()
 
 	// Initialize Redis
 	err = common.InitRedisClient()

@@ -113,6 +113,11 @@ var DebugEnabled bool
 var MemoryCacheEnabled bool
 
 var LogConsumeEnabled = true
+var PromptLogEnabled = false
+var PromptLogMaxContentBytes = 16 * 1024
+var PromptLogQueueSize = 10000
+var PromptLogBatchSize = 100
+var PromptLogFlushIntervalSeconds = 1
 
 var TLSInsecureSkipVerify bool
 var InsecureTLSConfig = &tls.Config{InsecureSkipVerify: true}

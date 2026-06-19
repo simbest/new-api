@@ -116,6 +116,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		}
 		return
 	}
+	service.CapturePromptLog(c, relayFormat, request)
 
 	relayInfo, err := relaycommon.GenRelayInfo(c, relayFormat, request, ws)
 	if err != nil {

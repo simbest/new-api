@@ -213,7 +213,10 @@ func InitDB() (err error) {
 func InitLogDB() (err error) {
 	if os.Getenv("LOG_SQL_DSN") == "" {
 		LOG_DB = DB
-		return
+		if !common.IsMasterNode {
+			return nil
+		}
+		return migrateLOGDB()
 	}
 	db, err := chooseDB("LOG_SQL_DSN", true)
 	if err == nil {
@@ -370,6 +373,9 @@ func migrateDBFast() error {
 func migrateLOGDB() error {
 	var err error
 	if err = LOG_DB.AutoMigrate(&Log{}); err != nil {
+		return err
+	}
+	if err = LOG_DB.AutoMigrate(&PromptLog{}, &PromptLogContent{}); err != nil {
 		return err
 	}
 	return nil
