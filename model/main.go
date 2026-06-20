@@ -375,7 +375,7 @@ func migrateLOGDB() error {
 	if err = LOG_DB.AutoMigrate(&Log{}); err != nil {
 		return err
 	}
-	if err = LOG_DB.AutoMigrate(&PromptLog{}, &PromptLogContent{}); err != nil {
+	if err = LOG_DB.AutoMigrate(&PromptLog{}, &PromptLogContent{}, &PromptLogAnalysisTask{}); err != nil {
 		return err
 	}
 	return nil

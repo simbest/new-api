@@ -309,6 +309,20 @@ func SetApiRouter(router *gin.Engine) {
 		logRoute.GET("/self", middleware.UserAuth(), controller.GetUserLogs)
 		logRoute.GET("/self/search", middleware.UserAuth(), middleware.SearchRateLimit(), controller.SearchUserLogs)
 
+		promptLogRoute := apiRouter.Group("/prompt_log")
+		promptLogRoute.Use(middleware.AdminAuth())
+		{
+			promptLogRoute.GET("/", controller.GetPromptLogs)
+			promptLogRoute.POST("/analysis", controller.CreatePromptLogAnalysis)
+			promptLogRoute.GET("/analysis", controller.GetPromptLogAnalysisTasks)
+			promptLogRoute.GET("/analysis/prompt", controller.GetPromptLogAnalysisPrompt)
+			promptLogRoute.PUT("/analysis/prompt", controller.UpdatePromptLogAnalysisPrompt)
+			promptLogRoute.POST("/analysis/prompt/reset", controller.ResetPromptLogAnalysisPrompt)
+			promptLogRoute.POST("/analysis/:id/retry", controller.RetryPromptLogAnalysisTask)
+			promptLogRoute.GET("/analysis/:id", controller.GetPromptLogAnalysisTask)
+			promptLogRoute.GET("/:id/content", controller.GetPromptLogContent)
+		}
+
 		dataRoute := apiRouter.Group("/data")
 		dataRoute.GET("/", middleware.AdminAuth(), controller.GetAllQuotaDates)
 		dataRoute.GET("/users", middleware.AdminAuth(), controller.GetQuotaDatesByUser)

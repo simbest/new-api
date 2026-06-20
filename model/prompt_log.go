@@ -1,6 +1,8 @@
 package model
 
 import (
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
@@ -40,6 +42,12 @@ type PromptLogRecord struct {
 	CreatedAt      int64
 }
 
+type PromptLogFilter struct {
+	User      string
+	StartTime int64
+	EndTime   int64
+}
+
 func RecordPromptLogs(records []PromptLogRecord) error {
 	if len(records) == 0 {
 		return nil
@@ -77,6 +85,43 @@ func RecordPromptLogs(records []PromptLogRecord) error {
 		}
 		return tx.Create(&contents).Error
 	})
+}
+
+func GetPromptLogs(startIdx int, num int, filter PromptLogFilter) (logs []*PromptLog, total int64, err error) {
+	tx := LOG_DB.Model(&PromptLog{})
+	tx = applyPromptLogFilter(tx, filter)
+	if err = tx.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err = tx.Order("created_at desc").Order("id desc").Limit(num).Offset(startIdx).Find(&logs).Error
+	return logs, total, err
+}
+
+func applyPromptLogFilter(tx *gorm.DB, filter PromptLogFilter) *gorm.DB {
+	user := strings.TrimSpace(filter.User)
+	if user != "" {
+		if userId, err := strconv.Atoi(user); err == nil && userId > 0 {
+			tx = tx.Where("prompt_logs.user_id = ? OR prompt_logs.username LIKE ?", userId, "%"+user+"%")
+		} else {
+			tx = tx.Where("prompt_logs.username LIKE ?", "%"+user+"%")
+		}
+	}
+	if filter.StartTime > 0 {
+		tx = tx.Where("prompt_logs.created_at >= ?", filter.StartTime)
+	}
+	if filter.EndTime > 0 {
+		tx = tx.Where("prompt_logs.created_at <= ?", filter.EndTime)
+	}
+	return tx
+}
+
+func GetPromptLogContent(promptLogId int) (*PromptLogContent, error) {
+	content := &PromptLogContent{}
+	err := LOG_DB.Where("prompt_log_id = ?", promptLogId).First(content).Error
+	if err != nil {
+		return nil, err
+	}
+	return content, nil
 }
 
 func NewPromptLogRecord(userId int, username, requestId, modelName, relayFormat, contentPreview, contentText string, contentBytes int, truncated bool) PromptLogRecord {

@@ -301,6 +301,8 @@ func InitResources() error {
 		return err
 	}
 	service.StartPromptLogWorker()
+	service.StartPromptLogCleanupTask()
+	service.StartPromptLogAnalysisWorker()
 
 	// Initialize Redis
 	err = common.InitRedisClient()

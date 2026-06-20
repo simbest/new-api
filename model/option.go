@@ -53,6 +53,11 @@ func InitOptionMap() {
 	common.OptionMap["PromptLogQueueSize"] = strconv.Itoa(common.PromptLogQueueSize)
 	common.OptionMap["PromptLogBatchSize"] = strconv.Itoa(common.PromptLogBatchSize)
 	common.OptionMap["PromptLogFlushIntervalSeconds"] = strconv.Itoa(common.PromptLogFlushIntervalSeconds)
+	common.OptionMap["PromptLogAnalysisPrompt"] = ""
+	common.OptionMap["PromptLogAnalysisModel"] = common.PromptLogAnalysisModel
+	common.OptionMap["PromptLogAnalysisMaxLogs"] = strconv.Itoa(common.PromptLogAnalysisMaxLogs)
+	common.OptionMap["PromptLogAnalysisMaxChars"] = strconv.Itoa(common.PromptLogAnalysisMaxChars)
+	common.OptionMap["PromptLogAnalysisTimeoutSeconds"] = strconv.Itoa(common.PromptLogAnalysisTimeoutSeconds)
 	common.OptionMap["DisplayInCurrencyEnabled"] = strconv.FormatBool(common.DisplayInCurrencyEnabled)
 	common.OptionMap["DisplayTokenStatEnabled"] = strconv.FormatBool(common.DisplayTokenStatEnabled)
 	common.OptionMap["DrawingEnabled"] = strconv.FormatBool(common.DrawingEnabled)
@@ -575,6 +580,14 @@ func updateOptionMap(key string, value string) (err error) {
 		common.PromptLogBatchSize, _ = strconv.Atoi(value)
 	case "PromptLogFlushIntervalSeconds":
 		common.PromptLogFlushIntervalSeconds, _ = strconv.Atoi(value)
+	case "PromptLogAnalysisModel":
+		common.PromptLogAnalysisModel = strings.TrimSpace(value)
+	case "PromptLogAnalysisMaxLogs":
+		common.PromptLogAnalysisMaxLogs, _ = strconv.Atoi(value)
+	case "PromptLogAnalysisMaxChars":
+		common.PromptLogAnalysisMaxChars, _ = strconv.Atoi(value)
+	case "PromptLogAnalysisTimeoutSeconds":
+		common.PromptLogAnalysisTimeoutSeconds, _ = strconv.Atoi(value)
 	case "PayMethods":
 		err = operation_setting.UpdatePayMethodsByJsonString(value)
 	case "WaffoPayMethods":

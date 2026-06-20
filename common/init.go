@@ -86,6 +86,10 @@ func InitEnv() {
 	PromptLogQueueSize = GetEnvOrDefault("PromptLogQueueSize", PromptLogQueueSize)
 	PromptLogBatchSize = GetEnvOrDefault("PromptLogBatchSize", PromptLogBatchSize)
 	PromptLogFlushIntervalSeconds = GetEnvOrDefault("PromptLogFlushIntervalSeconds", PromptLogFlushIntervalSeconds)
+	PromptLogAnalysisModel = GetEnvOrDefaultString("PromptLogAnalysisModel", PromptLogAnalysisModel)
+	PromptLogAnalysisMaxLogs = GetEnvOrDefault("PromptLogAnalysisMaxLogs", PromptLogAnalysisMaxLogs)
+	PromptLogAnalysisMaxChars = GetEnvOrDefault("PromptLogAnalysisMaxChars", PromptLogAnalysisMaxChars)
+	PromptLogAnalysisTimeoutSeconds = GetEnvOrDefault("PromptLogAnalysisTimeoutSeconds", PromptLogAnalysisTimeoutSeconds)
 	IsMasterNode = os.Getenv("NODE_TYPE") != "slave"
 	NodeName = os.Getenv("NODE_NAME")
 	TLSInsecureSkipVerify = GetEnvOrDefaultBool("TLS_INSECURE_SKIP_VERIFY", false)

@@ -27,6 +27,7 @@ import {
   ListTodo,
   MessageSquare,
   Radio,
+  SearchCheck,
   Settings,
   Ticket,
   User,
@@ -140,6 +141,11 @@ export function useSidebarData(): SidebarData {
             title: t('Subscription Management'),
             url: '/subscriptions',
             icon: CreditCard,
+          },
+          {
+            title: '使用分析',
+            url: '/usage-analysis',
+            icon: SearchCheck,
           },
           {
             title: t('System Settings'),
