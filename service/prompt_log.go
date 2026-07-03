@@ -104,6 +104,33 @@ func ExtractPromptLogText(request dto.Request) string {
 	return normalizePromptLogText(parts)
 }
 
+func DetectSystemNoticeInRequest(request dto.Request) (bool, int) {
+	count := 0
+	switch r := request.(type) {
+	case *dto.GeneralOpenAIRequest:
+		for _, message := range r.Messages {
+			if message.Role != "user" {
+				continue
+			}
+			count += countSystemNoticeTexts(extractOpenAIMessageText(message))
+		}
+	case *dto.ClaudeRequest:
+		for _, message := range r.Messages {
+			if message.Role != "user" {
+				continue
+			}
+			count += countSystemNoticeTexts(extractClaudeMessageText(message))
+		}
+	case *dto.OpenAIResponsesRequest:
+		for _, input := range r.ParseInput() {
+			if input.Type == "input_text" {
+				count += countSystemNoticeTexts([]string{input.Text})
+			}
+		}
+	}
+	return count > 0, count
+}
+
 func promptLogWorker() {
 	batchSize := common.PromptLogBatchSize
 	if batchSize <= 0 {
@@ -181,6 +208,16 @@ func extractClaudeMessageText(message dto.ClaudeMessage) []string {
 	return parts
 }
 
+func countSystemNoticeTexts(parts []string) int {
+	count := 0
+	for _, part := range parts {
+		if strings.Contains(part, "<system-notice>") {
+			count++
+		}
+	}
+	return count
+}
+
 func normalizePromptLogText(parts []string) string {
 	for i := len(parts) - 1; i >= 0; i-- {
 		part := parts[i]
@@ -201,6 +238,9 @@ func cleanPromptLogText(text string) string {
 	if strings.HasPrefix(text, "<system-reminder>") {
 		return ""
 	}
+	if strings.HasPrefix(text, "<system-notice>") {
+		return ""
+	}
 
 	if strings.HasPrefix(text, "Query:") {
 		text = strings.TrimSpace(strings.TrimPrefix(text, "Query:"))
@@ -215,6 +255,7 @@ func cleanPromptLogText(text string) string {
 		"\n\n## Relevant memory",
 		"\n\n## Relevant memories",
 		"\n\n<system-reminder>",
+		"\n\n<system-notice>",
 		"\n\nManaged memory has TWO directories",
 	} {
 		if idx := strings.Index(text, marker); idx >= 0 {

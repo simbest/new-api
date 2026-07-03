@@ -43,6 +43,33 @@ func TestExtractPromptLogTextCleansClientInjectedContext(t *testing.T) {
 	}
 }
 
+func TestExtractPromptLogTextSkipsSystemNoticeTask(t *testing.T) {
+	request := &dto.GeneralOpenAIRequest{
+		Messages: []dto.Message{
+			{Role: "user", Content: "<system-notice>\nBackground job bg_2 has completed.\n</system-notice>"},
+		},
+	}
+
+	got := ExtractPromptLogText(request)
+	if got != "" {
+		t.Fatalf("ExtractPromptLogText() = %q, want empty", got)
+	}
+}
+
+func TestExtractPromptLogTextRemovesSystemNoticeSuffix(t *testing.T) {
+	request := &dto.GeneralOpenAIRequest{
+		Messages: []dto.Message{
+			{Role: "user", Content: "查看当前目录的bug.log，首先修复此bug，不能进行入库\n\n<system-notice>\nBackground job bg_2 has completed.\n</system-notice>"},
+		},
+	}
+
+	got := ExtractPromptLogText(request)
+	want := "查看当前目录的bug.log，首先修复此bug，不能进行入库"
+	if got != want {
+		t.Fatalf("ExtractPromptLogText() = %q, want %q", got, want)
+	}
+}
+
 func TestExtractPromptLogTextRemovesRelevantMemorySuffix(t *testing.T) {
 	request := &dto.GeneralOpenAIRequest{
 		Messages: []dto.Message{

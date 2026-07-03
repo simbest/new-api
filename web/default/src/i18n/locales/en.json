@@ -3776,6 +3776,7 @@
     "Start collecting payments globally without registering a company. Built for indie developers, OPC sole proprietorships, and startups. Waffo Pancake acts as your Merchant of Record, taking on the compliance burden of global payment collection — consumption tax, invoicing, subscription management, refunds, and chargebacks. Solo developers can launch fast and stay focused on product instead of compliance. Onboard in minutes — one prompt to a full integration.": "Start collecting payments globally without registering a company. Built for indie developers, OPC sole proprietorships, and startups. Waffo Pancake acts as your Merchant of Record, taking on the compliance burden of global payment collection — consumption tax, invoicing, subscription management, refunds, and chargebacks. Solo developers can launch fast and stay focused on product instead of compliance. Onboard in minutes — one prompt to a full integration.",
     "Start for free with generous limits. No credit card required.": "Start for free with generous limits. No credit card required.",
     "Start Time": "Start Time",
+    "Start time cannot be later than end time": "Start time cannot be later than end time",
     "Static page describing the platform.": "Static page describing the platform.",
     "Statistical count": "Statistical count",
     "Statistical quota": "Statistical quota",

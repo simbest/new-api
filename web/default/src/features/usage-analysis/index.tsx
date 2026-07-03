@@ -38,6 +38,7 @@ import {
 import { SectionPageLayout } from '@/components/layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DateTimePicker } from '@/components/datetime-picker'
 import {
   Dialog,
   DialogContent,
@@ -98,15 +99,18 @@ const analysisStatusMeta: Record<
   failed: { label: 'Failed', variant: 'destructive' },
 }
 
-function toInputValue(timestamp?: number): string {
-  return timestamp ? dayjs(timestamp * 1000).format('YYYY-MM-DDTHH:mm') : ''
+function toDateValue(timestamp?: number): Date | undefined {
+  return timestamp ? new Date(timestamp * 1000) : undefined
 }
 
-function toTimestamp(value: string): number | undefined {
-  if (!value) return undefined
-  const date = new Date(value)
+function toTimestamp(date?: Date): number | undefined {
+  if (!date) return undefined
   if (Number.isNaN(date.getTime())) return undefined
   return Math.floor(date.getTime() / 1000)
+}
+
+function isInvalidTimeRange(start?: Date, end?: Date): boolean {
+  return Boolean(start && end && start.getTime() > end.getTime())
 }
 
 function PromptDetailDialog({
@@ -310,17 +314,17 @@ export function UsageAnalysis() {
     useState<PromptLogAnalysisTask | null>(null)
   const [submittingAnalysis, setSubmittingAnalysis] = useState(false)
   const [userFilter, setUserFilter] = useState(searchParams.user ?? '')
-  const [startTimeFilter, setStartTimeFilter] = useState(
-    toInputValue(searchParams.startTime)
+  const [startTimeFilter, setStartTimeFilter] = useState<Date | undefined>(
+    toDateValue(searchParams.startTime)
   )
-  const [endTimeFilter, setEndTimeFilter] = useState(
-    toInputValue(searchParams.endTime)
+  const [endTimeFilter, setEndTimeFilter] = useState<Date | undefined>(
+    toDateValue(searchParams.endTime)
   )
 
   useEffect(() => {
     setUserFilter(searchParams.user ?? '')
-    setStartTimeFilter(toInputValue(searchParams.startTime))
-    setEndTimeFilter(toInputValue(searchParams.endTime))
+    setStartTimeFilter(toDateValue(searchParams.startTime))
+    setEndTimeFilter(toDateValue(searchParams.endTime))
   }, [searchParams.endTime, searchParams.startTime, searchParams.user])
 
   const {
@@ -338,6 +342,10 @@ export function UsageAnalysis() {
 
   const handleSearch = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault()
+    if (isInvalidTimeRange(startTimeFilter, endTimeFilter)) {
+      toast.error(t('Start time cannot be later than end time'))
+      return
+    }
     navigate({
       search: (prev) => ({
         ...prev,
@@ -396,16 +404,21 @@ export function UsageAnalysis() {
   })
 
   const handleCreateAnalysis = async () => {
-    if (!searchParams.user?.trim()) {
+    const user = userFilter.trim()
+    if (!user) {
       toast.error(t('Please filter to exactly one user before submitting analysis'))
+      return
+    }
+    if (isInvalidTimeRange(startTimeFilter, endTimeFilter)) {
+      toast.error(t('Start time cannot be later than end time'))
       return
     }
     setSubmittingAnalysis(true)
     try {
       const result = await createPromptLogAnalysis({
-        user: searchParams.user,
-        start_time: searchParams.startTime,
-        end_time: searchParams.endTime,
+        user,
+        start_time: toTimestamp(startTimeFilter),
+        end_time: toTimestamp(endTimeFilter),
       })
       if (!result.success) {
         toast.error(result.message || t('Failed to submit analysis task'))
@@ -752,22 +765,22 @@ export function UsageAnalysis() {
                 <div className='text-muted-foreground text-xs'>
                   {t('Start Time')}
                 </div>
-                <Input
-                  type='datetime-local'
+                <DateTimePicker
                   value={startTimeFilter}
-                  onChange={(event) => setStartTimeFilter(event.target.value)}
-                  className='h-8 text-sm leading-5 tabular-nums'
+                  onChange={setStartTimeFilter}
+                  placeholder={t('Select start time')}
+                  className='[&_button]:h-8 [&_input]:h-8'
                 />
               </div>
               <div className='space-y-1.5'>
                 <div className='text-muted-foreground text-xs'>
                   {t('End Time')}
                 </div>
-                <Input
-                  type='datetime-local'
+                <DateTimePicker
                   value={endTimeFilter}
-                  onChange={(event) => setEndTimeFilter(event.target.value)}
-                  className='h-8 text-sm leading-5 tabular-nums'
+                  placeholder={t('Select end time')}
+                  onChange={setEndTimeFilter}
+                  className='[&_button]:h-8 [&_input]:h-8'
                 />
               </div>
             </div>

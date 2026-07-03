@@ -116,6 +116,15 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		}
 		return
 	}
+	if found, count := service.DetectSystemNoticeInRequest(request); found {
+		logger.LogWarn(c, fmt.Sprintf(
+			"system-notice marker detected in user request: path=%s relay_format=%s model=%s count=%d",
+			c.Request.URL.Path,
+			relayFormat,
+			getPromptLogModelNameForRelay(request),
+			count,
+		))
+	}
 	service.CapturePromptLog(c, relayFormat, request)
 
 	relayInfo, err := relaycommon.GenRelayInfo(c, relayFormat, request, ws)
@@ -288,6 +297,21 @@ func fastTokenCountMetaForPricing(request dto.Request) *types.TokenCountMeta {
 		// Best-effort: leave CombineText empty to avoid large allocations.
 	}
 	return meta
+}
+
+func getPromptLogModelNameForRelay(request dto.Request) string {
+	switch r := request.(type) {
+	case *dto.GeneralOpenAIRequest:
+		return r.Model
+	case *dto.ClaudeRequest:
+		return r.Model
+	case *dto.OpenAIResponsesRequest:
+		return r.Model
+	case *dto.OpenAIResponsesCompactionRequest:
+		return r.Model
+	default:
+		return ""
+	}
 }
 
 func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service.RetryParam) (*model.Channel, *types.NewAPIError) {
