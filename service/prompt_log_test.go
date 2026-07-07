@@ -97,6 +97,33 @@ func TestExtractPromptLogTextSkipsManagedMemoryTask(t *testing.T) {
 	}
 }
 
+func TestExtractPromptLogTextSkipsLanguageModelHandoffSummary(t *testing.T) {
+	request := &dto.GeneralOpenAIRequest{
+		Messages: []dto.Message{
+			{Role: "user", Content: "Another language model started to solve this problem and produced a summary of its thinking process.\n\nWe need continue from previous work."},
+		},
+	}
+
+	got := ExtractPromptLogText(request)
+	if got != "" {
+		t.Fatalf("ExtractPromptLogText() = %q, want empty", got)
+	}
+}
+
+func TestExtractPromptLogTextRemovesLanguageModelHandoffSummarySuffix(t *testing.T) {
+	request := &dto.GeneralOpenAIRequest{
+		Messages: []dto.Message{
+			{Role: "user", Content: "修复使用分析提示词采集问题\n\nAnother language model started to solve this problem and produced a summary of its thinking process.\n\nPrior work summary"},
+		},
+	}
+
+	got := ExtractPromptLogText(request)
+	want := "修复使用分析提示词采集问题"
+	if got != want {
+		t.Fatalf("ExtractPromptLogText() = %q, want %q", got, want)
+	}
+}
+
 func TestExtractPromptLogTextRemovesManagedMemorySuffix(t *testing.T) {
 	request := &dto.GeneralOpenAIRequest{
 		Messages: []dto.Message{

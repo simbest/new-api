@@ -26,6 +26,10 @@ var (
 
 const promptLogDedupeTTL = 60 * time.Second
 
+var promptLogNonUserContentPrefixes = []string{
+	"Another language model started to solve this problem and produced a summary of its thinking process.",
+}
+
 func StartPromptLogWorker() {
 	promptLogStartOnce.Do(func() {
 		queueSize := common.PromptLogQueueSize
@@ -257,6 +261,7 @@ func cleanPromptLogText(text string) string {
 		"\n\n<system-reminder>",
 		"\n\n<system-notice>",
 		"\n\nManaged memory has TWO directories",
+		"\n\nAnother language model started to solve this problem and produced a summary of its thinking process.",
 	} {
 		if idx := strings.Index(text, marker); idx >= 0 {
 			text = text[:idx]
@@ -265,6 +270,11 @@ func cleanPromptLogText(text string) string {
 
 	if strings.HasPrefix(text, "Managed memory has TWO directories") {
 		return ""
+	}
+	for _, prefix := range promptLogNonUserContentPrefixes {
+		if strings.HasPrefix(text, prefix) {
+			return ""
+		}
 	}
 
 	return strings.TrimSpace(text)

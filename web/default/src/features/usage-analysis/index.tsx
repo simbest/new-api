@@ -35,10 +35,10 @@ import {
   DataTableRow,
   useDataTable,
 } from '@/components/data-table'
+import { CompactDateTimeRangePicker } from '@/components/compact-date-time-range-picker'
 import { SectionPageLayout } from '@/components/layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { DateTimePicker } from '@/components/datetime-picker'
 import {
   Dialog,
   DialogContent,
@@ -760,29 +760,18 @@ export function UsageAnalysis() {
                 className='h-8'
               />
             </div>
-            <div className='grid min-w-0 flex-[2] gap-2 sm:grid-cols-2'>
-              <div className='space-y-1.5'>
-                <div className='text-muted-foreground text-xs'>
-                  {t('Start Time')}
-                </div>
-                <DateTimePicker
-                  value={startTimeFilter}
-                  onChange={setStartTimeFilter}
-                  placeholder={t('Select start time')}
-                  className='[&_button]:h-8 [&_input]:h-8'
-                />
+            <div className='min-w-0 flex-[2] space-y-1.5'>
+              <div className='text-muted-foreground text-xs'>
+                {t('Date Range')}
               </div>
-              <div className='space-y-1.5'>
-                <div className='text-muted-foreground text-xs'>
-                  {t('End Time')}
-                </div>
-                <DateTimePicker
-                  value={endTimeFilter}
-                  placeholder={t('Select end time')}
-                  onChange={setEndTimeFilter}
-                  className='[&_button]:h-8 [&_input]:h-8'
-                />
-              </div>
+              <CompactDateTimeRangePicker
+                start={startTimeFilter}
+                end={endTimeFilter}
+                onChange={({ start, end }) => {
+                  setStartTimeFilter(start)
+                  setEndTimeFilter(end)
+                }}
+              />
             </div>
             <Button type='submit' className='h-8 gap-2 px-3'>
               <Search />
