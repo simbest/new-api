@@ -2,10 +2,13 @@ package service
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -17,6 +20,7 @@ import (
 
 var (
 	httpClient      *http.Client
+	noHTTP2Client   *http.Client
 	proxyClientLock sync.Mutex
 	proxyClients    = make(map[string]*http.Client)
 )
@@ -45,9 +49,25 @@ func InitHttpClient() {
 		transport.TLSClientConfig = common.InsecureTLSConfig
 	}
 
+	noHTTP2Transport := &http.Transport{
+		MaxIdleConns:        common.RelayMaxIdleConns,
+		MaxIdleConnsPerHost: common.RelayMaxIdleConnsPerHost,
+		IdleConnTimeout:     time.Duration(common.RelayIdleConnTimeout) * time.Second,
+		ForceAttemptHTTP2:   false,
+		TLSNextProto:        map[string]func(string, *tls.Conn) http.RoundTripper{},
+		Proxy:               http.ProxyFromEnvironment,
+	}
+	if common.TLSInsecureSkipVerify {
+		noHTTP2Transport.TLSClientConfig = common.InsecureTLSConfig
+	}
+
 	if common.RelayTimeout == 0 {
 		httpClient = &http.Client{
 			Transport:     transport,
+			CheckRedirect: checkRedirect,
+		}
+		noHTTP2Client = &http.Client{
+			Transport:     noHTTP2Transport,
 			CheckRedirect: checkRedirect,
 		}
 	} else {
@@ -56,11 +76,45 @@ func InitHttpClient() {
 			Timeout:       time.Duration(common.RelayTimeout) * time.Second,
 			CheckRedirect: checkRedirect,
 		}
+		noHTTP2Client = &http.Client{
+			Transport:     noHTTP2Transport,
+			Timeout:       time.Duration(common.RelayTimeout) * time.Second,
+			CheckRedirect: checkRedirect,
+		}
 	}
 }
 
 func GetHttpClient() *http.Client {
 	return httpClient
+}
+
+func GetHttpClientForURL(rawURL string, proxyURL string) (*http.Client, error) {
+	if proxyURL == "" && shouldDisableHTTP2(rawURL) && noHTTP2Client != nil {
+		return noHTTP2Client, nil
+	}
+	return GetHttpClientWithProxy(proxyURL)
+}
+
+func shouldDisableHTTP2(rawURL string) bool {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(parsedURL.Hostname())
+	if host == "" {
+		return false
+	}
+	hosts := os.Getenv("RELAY_DISABLE_HTTP2_HOSTS")
+	if hosts == "" {
+		hosts = "sub2api.gptclubapi.xyz"
+	}
+	for _, item := range strings.Split(hosts, ",") {
+		item = strings.ToLower(strings.TrimSpace(item))
+		if item != "" && host == item {
+			return true
+		}
+	}
+	return false
 }
 
 // GetHttpClientWithProxy returns the default client or a proxy-enabled one when proxyURL is provided.

@@ -231,6 +231,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
+	normalizeUnsupportedReasoningEffort(info, request)
 	if info.ChannelType != constant.ChannelTypeOpenAI && info.ChannelType != constant.ChannelTypeAzure {
 		request.StreamOptions = nil
 	}
@@ -334,6 +335,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		effort, originModel := reasoning.ParseOpenAIReasoningEffortFromModelSuffix(info.UpstreamModelName)
 		if effort != "" {
 			request.ReasoningEffort = effort
+			normalizeUnsupportedReasoningEffort(info, request)
 			info.UpstreamModelName = originModel
 			request.Model = originModel
 		}
@@ -423,6 +425,19 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 		c.Request.Header.Set("Content-Type", writer.FormDataContentType())
 		logger.LogDebug(c.Request.Context(), "--header 'Content-Type: %s'", writer.FormDataContentType())
 		return &requestBody, nil
+	}
+}
+
+func normalizeUnsupportedReasoningEffort(info *relaycommon.RelayInfo, request *dto.GeneralOpenAIRequest) {
+	if request == nil || request.ReasoningEffort != "minimal" {
+		return
+	}
+	modelName := request.Model
+	if info != nil && info.UpstreamModelName != "" {
+		modelName = info.UpstreamModelName
+	}
+	if dto.IsOpenAIGPT5Model(modelName) {
+		request.ReasoningEffort = "low"
 	}
 }
 
