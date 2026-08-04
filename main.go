@@ -301,6 +301,7 @@ func InitResources() error {
 		return err
 	}
 	service.StartPromptLogWorker()
+	service.StartLogCleanupTask()
 	service.StartPromptLogCleanupTask()
 	service.StartPromptLogAnalysisWorker()
 
