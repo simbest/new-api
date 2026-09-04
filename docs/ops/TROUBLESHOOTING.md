@@ -108,9 +108,12 @@ access token 生成:登录后 `GET /api/user/token`(每次调用生成新令牌�
 
 ## 10. monitor 报"未找到匹配 NewAPI 渠道"
 
-非故障:monitor 按监控键标签与渠道**名称精确匹配**。渠道改名/删除后,对应监控键会显示"跳过(未找到匹配 NewAPI 渠道)"。让监控键标签与渠道名保持一致即可。
+非故障:monitor 按监控键标签与渠道**名称精确匹配**。渠道改名/删除后,对应监控键会显示"跳过(未找到匹配 NewAPI 渠道)"。
 
-monitor 相关要点:
-- 配置在 `D:\docker\new-api-monitor\.env`;改后需 `docker compose up -d --force-recreate`
+monitor 相关要点(2026-09-04 升级后):
+- 配置在 `D:\docker\new-api-monitor\.env`;改后需 `docker compose up -d --force-recreate`,改代码需先 `docker compose build`
 - 必须保持 `NEWAPI_ACCESS_TOKEN` + `NEWAPI_USER_ID` 模式(见 §2)
+- 自动启停/优先级控制的渠道白名单由 `CONTROLLED_CHANNEL_LABELS` 配置(空 = 所有 `QUOTA_KEY_LABELS` 均可控),不再硬编码
+- 新增渠道错误率告警:每 3 分钟检查 NewAPI 错误日志(type=5),近 10 分钟单渠道错误 ≥10 次即推送企业微信,每渠道 1 小时冷却(`CHANNEL_ERROR_ALERT_*` 可调)——§5 的上游额度耗尽类故障会被主动发现
+- GitLab 提交统计已通过 `GITLAB_COMMIT_STATS_ENABLED=false` 关闭(上游地址返回非 JSON);修复地址后改回 true 即可
 - "额度查询失败:API Key 无效"是 monitor 自身上游账号问题,与 new-api 无关

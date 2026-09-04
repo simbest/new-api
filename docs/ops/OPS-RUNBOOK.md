@@ -9,7 +9,7 @@
 |---|---|---|---|---|
 | `new-api-src` | `new-api:dev-src`(本地源码构建) | `0.0.0.0:8800 → 3000` | 运行 | **当前生产实例**,dev 分支源码构建 |
 | `new-api-src-redis` | `redis:7-alpine` | 无发布 | 运行 | 上例的缓存后端 |
-| `new-api-monitor` | `new-api-monitor:local` | 无发布 | 运行 | 渠道额度监控,源码在 `D:\docker\new-api-monitor` |
+| `new-api-monitor` | `new-api-monitor:local` | 无发布 | 运行 | 渠道额度监控 + 渠道自动启停/优先级 + 渠道错误率告警(企业微信推送),源码在 `D:\docker\new-api-monitor` |
 | `new-api-local` | `calciumion/new-api:latest`(官方,rc.24) | — | 已停用 | 旧实例,数据卷 `local_data` 保留作回滚 |
 | `new-api-local-redis` | `redis` | — | 已停用 | 旧实例缓存 |
 
