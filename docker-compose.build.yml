@@ -1,0 +1,55 @@
+# Source-build stack — builds the current working tree (dev branch) via repo Dockerfile.
+# Separate volumes from new-api-local; do NOT share SQLite data with the running instance.
+#
+# Usage:
+#   docker compose -f docker-compose.build.yml up -d --build
+#
+# Access: http://<host-ip>:8800  (0.0.0.0 binding; root password set during setup, no defaults)
+
+name: new-api-src
+
+services:
+  new-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.src-build
+    image: new-api:dev-src
+    container_name: new-api-src
+    restart: unless-stopped
+    command: --log-dir /app/logs
+    ports:
+      - "8800:3000"
+    volumes:
+      - src_data:/data
+      - src_logs:/app/logs
+    environment:
+      - TZ=Asia/Shanghai
+      - REDIS_CONN_STRING=redis://redis
+      - ERROR_LOG_ENABLED=true
+      - BATCH_UPDATE_ENABLED=true
+      # Prompt logging toggle. Only records user-authored text (never AI
+      # content, responses or tool results). Default off; see docs/ops/OPS-RUNBOOK.md §9.
+      - PromptLogEnabled=${PROMPT_LOG_ENABLED:-false}
+      # Docker Desktop NAT makes all console traffic share one client IP (gateway),
+      # so per-IP critical limit must cover the whole admin team's copy-key workload.
+      - CRITICAL_RATE_LIMIT=100
+    depends_on:
+      redis:
+        condition: service_started
+    networks:
+      - src-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: new-api-src-redis
+    restart: unless-stopped
+    networks:
+      - src-network
+
+volumes:
+  src_data:
+  src_logs:
+
+networks:
+  src-network:
+    driver: bridge

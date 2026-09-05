@@ -99,13 +99,61 @@ func ExtractPromptLogText(request dto.Request) string {
 			parts = append(parts, extractClaudeMessageText(message)...)
 		}
 	case *dto.OpenAIResponsesRequest:
-		for _, input := range r.ParseInput() {
-			if input.Type == "input_text" && strings.TrimSpace(input.Text) != "" {
-				parts = append(parts, input.Text)
+		parts = append(parts, extractResponsesUserInputText(r)...)
+	}
+	return normalizePromptLogText(parts)
+}
+
+// extractResponsesUserInputText collects only user-authored text from the
+// Responses API input. Items with a non-user role are AI-generated or
+// machine-injected history echoed back by the client and must never be captured.
+func extractResponsesUserInputText(request *dto.OpenAIResponsesRequest) []string {
+	if request.Input == nil {
+		return nil
+	}
+	if common.GetJsonType(request.Input) == "string" {
+		var text string
+		_ = common.Unmarshal(request.Input, &text)
+		if strings.TrimSpace(text) != "" {
+			return []string{text}
+		}
+		return nil
+	}
+	if common.GetJsonType(request.Input) != "array" {
+		return nil
+	}
+	var inputs []dto.Input
+	_ = common.Unmarshal(request.Input, &inputs)
+	var parts []string
+	for _, input := range inputs {
+		if input.Role != "" && input.Role != "user" {
+			continue
+		}
+		switch common.GetJsonType(input.Content) {
+		case "string":
+			var text string
+			_ = common.Unmarshal(input.Content, &text)
+			if strings.TrimSpace(text) != "" {
+				parts = append(parts, text)
+			}
+		case "array":
+			var contentItems []any
+			_ = common.Unmarshal(input.Content, &contentItems)
+			for _, itemAny := range contentItems {
+				item, ok := itemAny.(map[string]any)
+				if !ok {
+					continue
+				}
+				if typeVal, _ := item["type"].(string); typeVal != "input_text" {
+					continue
+				}
+				if text, _ := item["text"].(string); strings.TrimSpace(text) != "" {
+					parts = append(parts, text)
+				}
 			}
 		}
 	}
-	return normalizePromptLogText(parts)
+	return parts
 }
 
 func DetectSystemNoticeInRequest(request dto.Request) (bool, int) {

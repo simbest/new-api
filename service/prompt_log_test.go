@@ -1,11 +1,50 @@
 package service
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/QuantumNous/new-api/dto"
 )
+
+func TestExtractPromptLogTextResponsesRecordsOnlyUserText(t *testing.T) {
+	input := json.RawMessage(`[
+		{"type":"message","role":"user","content":[{"type":"input_text","text":"first question"}]},
+		{"type":"message","role":"assistant","content":[{"type":"output_text","text":"AI generated answer"}]},
+		{"type":"message","role":"assistant","content":"prefilled AI continuation"},
+		{"type":"message","role":"system","content":"system instructions"},
+		{"type":"function_call_output","call_id":"1","output":"{\"temp\":25}"},
+		{"type":"message","role":"user","content":[{"type":"input_text","text":"what about tomorrow"}]}
+	]`)
+
+	got := ExtractPromptLogText(&dto.OpenAIResponsesRequest{Input: input})
+	want := "what about tomorrow"
+	if got != want {
+		t.Fatalf("ExtractPromptLogText() = %q, want %q", got, want)
+	}
+}
+
+func TestExtractPromptLogTextResponsesStringInput(t *testing.T) {
+	got := ExtractPromptLogText(&dto.OpenAIResponsesRequest{Input: json.RawMessage(`"plain user prompt"`)})
+	want := "plain user prompt"
+	if got != want {
+		t.Fatalf("ExtractPromptLogText() = %q, want %q", got, want)
+	}
+}
+
+func TestExtractPromptLogTextResponsesSkipsTrailingAIPrefill(t *testing.T) {
+	input := json.RawMessage(`[
+		{"type":"message","role":"user","content":[{"type":"input_text","text":"continue the essay"}]},
+		{"type":"message","role":"assistant","content":"The quick brown fox"}
+	]`)
+
+	got := ExtractPromptLogText(&dto.OpenAIResponsesRequest{Input: input})
+	want := "continue the essay"
+	if got != want {
+		t.Fatalf("ExtractPromptLogText() = %q, want %q", got, want)
+	}
+}
 
 func TestExtractPromptLogTextKeepsLastUserTextOnly(t *testing.T) {
 	request := &dto.GeneralOpenAIRequest{

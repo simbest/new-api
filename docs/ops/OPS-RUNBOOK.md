@@ -1,7 +1,7 @@
 # new-api 运维手册(本机部署)
 
 > 适用环境:Windows + Docker Desktop,仓库路径 `D:\docker\new-api`
-> 最后更新:2026-09-04(基于 dev 分支 `5e70fb4f` 源码构建实例)
+> 最后更新:2026-09-05(新增 §9 Prompt 日志开关;此前基于 dev 分支 `5e70fb4f` 源码构建实例)
 
 ## 1. 容器拓扑
 
@@ -99,5 +99,54 @@ docker exec new-api-src ls /data                       # 数据目录
 | `CRITICAL_RATE_LIMIT` | 100 | Docker Desktop 下所有客户端共享网关 IP,默认 20 次/20 分钟不够用(见排查手册 §4) |
 | `REDIS_CONN_STRING` | redis://redis | 缓存与批量更新 |
 | `BATCH_UPDATE_ENABLED` | true | 批量额度更新,降低 DB 压力 |
+| `PromptLogEnabled` | 未设置(默认关闭) | 由仓库根 `.env` 的 `PROMPT_LOG_ENABLED` 控制,见 §9 |
 
 运营配置(数据库 options 表,非环境变量):`SelfUseModeEnabled=true`(自用模式,跳过模型价格校验)。
+
+## 9. Prompt 日志(用户输入记录)开关
+
+> 背景:2026-09-05 排查 `/api/prompt_log/` 返回空时确认——该功能默认关闭,当时 options 表无 `PromptLogEnabled`,`prompt_logs` 全表 0 行,接口行为正常。现改为 compose 变量显式控制,部署时自主决定开关。
+
+### 记录边界(重要)
+
+**只记录用户编写的自然语言输入**。以下内容一律不记录:
+
+| 不记录 | 说明 |
+|---|---|
+| AI 生成内容 | 请求历史中的 assistant 角色消息、Responses API 回传的 `output_text`/AI prefill(三种接入格式均按 role 严格过滤) |
+| 响应与输出 | 采集发生在转发上游**之前**,只读请求体,响应通道完全不经过采集代码 |
+| 工具结果 | `role=tool` 消息、Claude `tool_result` 块、Responses `function_call_output` |
+| 系统/机器注入 | `<system-reminder>`、`<system-notice>`、memory 注入块、AI 接续摘要等(有专门清洗逻辑) |
+| 非文本内容 | 图片/文件 URL、音频等 |
+| 不支持的接口 | Gemini 原生格式(`:generateContent`)、`/v1/completions` 的 prompt 字段、embeddings、audio、image、rerank、realtime |
+
+其余行为:每请求只取**最后一条**用户文本;同一用户 60 秒内相同内容去重;单条截断 16KB(`PromptLogMaxContentBytes`);保留 32 天,每日 01:00 自动清理;异步落库(默认 1 秒批量刷盘)。
+
+### 开启 / 关闭
+
+方式 A —— `.env`(推荐,部署形态可版本化):
+
+```powershell
+# 仓库根目录 .env(参考 .env.example 同名段落):
+#   PROMPT_LOG_ENABLED=true
+docker compose -f docker-compose.build.yml up -d   # 环境变量改动需重建容器
+```
+
+方式 B —— 运行时 option API(立即生效,无需重建;root 系统访问令牌):
+
+```powershell
+curl -X PUT http://127.0.0.1:8800/api/option/ -H "Authorization: Bearer <root访问令牌>" -H "Content-Type: application/json" -d "{\"key\":\"PromptLogEnabled\",\"value\":\"true\"}"
+```
+
+⚠️ 优先级:方式 B 会把值写入数据库 options 表,**DB 值优先生于环境变量**。想回到 `.env` 控制,需先用 API 改回同值或删除该 option 行,再重建容器。
+
+### 验证
+
+开启后产生几笔聊天请求,然后:
+
+```powershell
+# start_time/end_time 为 Unix 秒
+curl "http://127.0.0.1:8800/api/prompt_log/?p=1&page_size=20&user=<用户名>&start_time=<秒>&end_time=<秒>"
+```
+
+返回 `items` 非空即生效。注意:该用户在查询时段内须确有 chat 类请求(embeddings 等不计入);`content_preview` 只应出现用户输入文本。
